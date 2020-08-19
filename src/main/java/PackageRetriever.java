@@ -18,18 +18,11 @@ public class PackageRetriever {
     public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
         String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
-        Function<String, PackageData> parseResponseToPackageData = this.getPackageFromResponseData();
+        Function<String, PackageData> parseResponseToPackageData = this.parsePackageFromResponseData();
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = createRequest(url);
         return parseResponse(parseResponseToPackageData, client, request);
-    }
-
-    private PackageData parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
-        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body)
-                .thenApplyAsync(parseFunction)
-                .join();
     }
 
     private HttpRequest createRequest(String url) {
@@ -39,21 +32,27 @@ public class PackageRetriever {
                 .build();
     }
 
-    private Function<String, PackageData> getPackageFromResponseData() {
+    private PackageData parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(HttpResponse::body)
+                .thenApplyAsync(parseFunction)
+                .join();
+    }
+
+    private Function<String, PackageData> parsePackageFromResponseData() {
         return item -> {
             ObjectMapper objectMapper = new ObjectMapper();
 
             try {
                 JsonNode parser = objectMapper.readTree(item);
 
-                // read customer details
                 String name = parser.path("name").asText();
                 String version = parser.path("version").asText();
 
                 List<PackageData> dependencies = new ArrayList<>();
                 JsonNode depList = parser.get("dependencies");
                 if (depList != null) {
-                    dependencies = getDependencies(depList.fields());
+                    dependencies = processPackageDependencies(depList.fields());
                     dependencies = dependencies.stream()
                                     .parallel()
                                     .map(i -> RetrievePackageDataFromAPI(i.getName(), i.getVersion()))
@@ -69,17 +68,17 @@ public class PackageRetriever {
         };
     }
 
+    private List<PackageData> processPackageDependencies(Iterator<Map.Entry<String, JsonNode>> dependencies) {
+        return  getStreamFromIterator(dependencies)
+                .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true))
+                .collect(Collectors.toList());
+    }
+
     public static <T> Stream<T> getStreamFromIterator(Iterator<T> iterator) {
         Spliterator<T>
                 spliterator = Spliterators
                 .spliteratorUnknownSize(iterator, 0);
 
         return StreamSupport.stream(spliterator, true);
-    }
-
-    private List<PackageData> getDependencies(Iterator<Map.Entry<String, JsonNode>> dependencies) {
-        return  getStreamFromIterator(dependencies)
-                .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true))
-                .collect(Collectors.toList());
     }
 }
