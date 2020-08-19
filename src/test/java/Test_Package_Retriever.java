@@ -15,24 +15,38 @@ public class Test_Package_Retriever {
     @Test
     public void Test_Get_Package(){
         PackageRetriever retriever = new PackageRetriever();
-        PackageData rootPackage = retriever.FindPackageDependencyTree(TEST_PACKAGE_NAME, TEST_VERSION);
+        PackageData rootPackage = retriever.RetrievePackageDataFromAPI(TEST_PACKAGE_NAME, TEST_VERSION);
         assertEquals(rootPackage.getName(), TEST_PACKAGE_NAME);
         assertEquals(rootPackage.getVersion(), TEST_VERSION);
         assertEquals(rootPackage.getFound(), true);
         assertEquals(rootPackage.getDependencies().size(), 11);
 
-        List<PackageData> children = rootPackage.getDependencies().stream().filter(i -> i.getName().equals("cli-progress")).collect(Collectors.toList());
-        PackageData cli_progess_package = children.get(0);
+        List<PackageData> children = rootPackage.getDependencies().stream().filter(i -> i.getName().equals("decompress")).collect(Collectors.toList());
+        PackageData decompress_package = children.get(0);
 
-        assertEquals(cli_progess_package.getName(), "cli-progress");
-        assertEquals(cli_progess_package.getVersion(), "3.0.0");
-        assertEquals(cli_progess_package.getDependencies().size(), 2);
+        assertEquals(decompress_package.getName(), "decompress");
+        assertEquals(decompress_package.getVersion(), "4.2.0");
+        assertEquals(decompress_package.getDependencies().size(), 8);
 
-        children = cli_progess_package.getDependencies().stream().filter(i -> i.getName().equals("colors")).collect(Collectors.toList());
-        PackageData colors = children.get(0);
+        children = decompress_package.getDependencies().stream().filter(i -> i.getName().equals("decompress-tar")).collect(Collectors.toList());
+        PackageData decompress_tar_package = children.get(0);
 
-        assertEquals(colors.getName(), "colors");
-        assertEquals(colors.getVersion(), "1.1.2");
-        assertEquals(colors.getDependencies().size(), 0);
+        assertEquals(decompress_tar_package.getName(), "decompress-tar");
+        assertEquals(decompress_tar_package.getVersion(), "4.0.0");
+        assertEquals(decompress_tar_package.getDependencies().size(), 2);
+
+        children = decompress_tar_package.getDependencies().stream().filter(i -> i.getName().equals("tar-stream")).collect(Collectors.toList());
+        PackageData tar_stream_package = children.get(0);
+
+        assertEquals(tar_stream_package.getName(), "tar-stream");
+        assertEquals(tar_stream_package.getVersion(), "1.5.2");
+        assertEquals(tar_stream_package.getDependencies().size(), 4);
+
+        children = tar_stream_package.getDependencies().stream().filter(i -> i.getName().equals("end-of-stream")).collect(Collectors.toList());
+        PackageData end_of_stream_package = children.get(0);
+
+        assertEquals(end_of_stream_package.getName(), "end-of-stream");
+        assertEquals(end_of_stream_package.getVersion(), "1.0.0");
+        assertEquals(end_of_stream_package.getDependencies().size(), 1);
     }
 }

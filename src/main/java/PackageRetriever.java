@@ -6,37 +6,29 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class PackageRetriever {
     String NPM_BASE_URL = "https://registry.npmjs.org";
 
-    public PackageData FindPackageDependencyTree(String PackageName, String Version) {
-        PackageData rootPackage = retreivePackageFromAPI(PackageName, Version);
-
-        return rootPackage;
-    }
-
-    private PackageData retreivePackageFromAPI(String PackageName, String Version) {
+    public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
         String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
-        Function<String, PackageData> f = this.getPackageFromResponseData();
+        Function<String, PackageData> parseResponseToPackageData = this.getPackageFromResponseData();
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = createRequest(url);
-        return getResponse(f, client, request);
+        return parseResponse(parseResponseToPackageData, client, request);
     }
 
-    private PackageData getResponse(Function<String, PackageData> f, HttpClient client, HttpRequest request) {
+    private PackageData parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
-                .thenApplyAsync(f)
+                .thenApplyAsync(parseFunction)
                 .join();
     }
 
@@ -47,7 +39,7 @@ public class PackageRetriever {
                 .build();
     }
 
-    private Function<String, PackageData> getPackageFromResponseData(){
+    private Function<String, PackageData> getPackageFromResponseData() {
         return item -> {
             ObjectMapper objectMapper = new ObjectMapper();
 
@@ -60,9 +52,9 @@ public class PackageRetriever {
 
                 List<PackageData> dependencies = new ArrayList<>();
                 JsonNode depList = parser.get("dependencies");
-                if(depList != null) {
+                if (depList != null) {
                     dependencies = getDependencies(depList.fields());
-                    dependencies = dependencies.stream().map(i -> retreivePackageFromAPI(i.getName(), i.getVersion())).collect(Collectors.toList());
+                    dependencies = dependencies.stream().map(i -> RetrievePackageDataFromAPI(i.getName(), i.getVersion())).collect(Collectors.toList());
                 }
 
                 return new PackageData(name, version, true, dependencies);
@@ -74,16 +66,17 @@ public class PackageRetriever {
         };
     }
 
-    private List<PackageData> getDependencies(Iterator<Map.Entry<String, JsonNode>> dependencies) {
-        List<PackageData> list = new ArrayList<>();
+    public static <T> Stream<T> getStreamFromIterator(Iterator<T> iterator) {
+        Spliterator<T>
+                spliterator = Spliterators
+                .spliteratorUnknownSize(iterator, 0);
 
-        while(dependencies.hasNext()){
-            Map.Entry<String, JsonNode> item = dependencies.next();
-            String name = item.getKey();
-            String version = item.getValue().textValue();
-            PackageData newPackage = new PackageData(name, version, true);
-            list.add(newPackage);
-        }
-        return list;
+        return StreamSupport.stream(spliterator, true);
+    }
+
+    private List<PackageData> getDependencies(Iterator<Map.Entry<String, JsonNode>> dependencies) {
+        return  getStreamFromIterator(dependencies)
+                .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true))
+                .collect(Collectors.toList());
     }
 }
