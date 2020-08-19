@@ -54,7 +54,10 @@ public class PackageRetriever {
                 JsonNode depList = parser.get("dependencies");
                 if (depList != null) {
                     dependencies = getDependencies(depList.fields());
-                    dependencies = dependencies.stream().map(i -> RetrievePackageDataFromAPI(i.getName(), i.getVersion())).collect(Collectors.toList());
+                    dependencies = dependencies.stream()
+                                    .parallel()
+                                    .map(i -> RetrievePackageDataFromAPI(i.getName(), i.getVersion()))
+                                    .collect(Collectors.toList());
                 }
 
                 return new PackageData(name, version, true, dependencies);
