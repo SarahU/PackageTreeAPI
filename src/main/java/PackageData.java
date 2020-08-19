@@ -7,19 +7,25 @@ public class PackageData {
     private final Boolean found;
     private final List<PackageData> dependencies;
 
+    private String processVersion(String version) {
+        return version.replace("^", "");
+    }
+
     public PackageData(String Name, String Version, Boolean Found){
         name = Name;
-        version = Version;
         found = Found;
+
+        version = processVersion(Version);
 
         dependencies = new ArrayList<>();
     }
 
     public PackageData(String Name, String Version, Boolean Found, List<PackageData> Dependencies){
         name = Name;
-        version = Version;
         found = Found;
         dependencies = Dependencies;
+
+        version = processVersion(Version);
     }
 
 
