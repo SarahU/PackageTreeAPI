@@ -1,3 +1,5 @@
+package com.sarahu.packageapp;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +10,15 @@ public class PackageData {
     private final List<PackageData> dependencies;
 
     private String processVersion(String version) {
-        return version.replace("^", "");
+
+        String cleanVersionString = version.replace("^", "");
+
+        int indexOfDoublePipe = cleanVersionString.indexOf("||");
+        if(indexOfDoublePipe < 0){
+            cleanVersionString = cleanVersionString.substring(indexOfDoublePipe+1);
+        }
+
+        return cleanVersionString;
     }
 
     public PackageData(String Name, String Version, Boolean Found){

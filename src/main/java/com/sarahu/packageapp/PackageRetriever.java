@@ -1,3 +1,5 @@
+package com.sarahu.packageapp;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,13 +18,18 @@ public class PackageRetriever {
     String NPM_BASE_URL = "https://registry.npmjs.org";
 
     public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
-        String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
+        try {
+            String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
-        Function<String, PackageData> parseResponseToPackageData = this.parsePackageFromResponseData();
+            Function<String, PackageData> parseResponseToPackageData = this.parsePackageFromResponseData();
 
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = createRequest(url);
-        return parseResponse(parseResponseToPackageData, client, request);
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = createRequest(url);
+            return parseResponse(parseResponseToPackageData, client, request);
+        }catch (Exception e){
+            System.out.println(e);
+            return new PackageData(PackageName, Version, false);
+        }
     }
 
     private HttpRequest createRequest(String url) {
