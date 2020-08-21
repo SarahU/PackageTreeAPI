@@ -22,6 +22,12 @@ public class RetreivePackageController {
 
     @GetMapping(path = "/packagetree/{packageName}/{version}", produces = "application/json")
     public PackageData getPackageTree(@PathVariable String packageName, @PathVariable String version) {
-        return retriever.RetrievePackageDataFromAPI(packageName, version);
+        try {
+            System.out.println("Running for " + packageName + ":" + version);
+            return retriever.RetrievePackageDataFromAPI(packageName, version);
+        }catch (Throwable e){
+            System.out.println(e);
+        }
+        return null;
     }
 }

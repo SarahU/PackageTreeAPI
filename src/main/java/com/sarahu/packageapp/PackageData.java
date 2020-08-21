@@ -14,8 +14,8 @@ public class PackageData {
         String cleanVersionString = version.replace("^", "");
 
         int indexOfDoublePipe = cleanVersionString.indexOf("||");
-        if(indexOfDoublePipe < 0){
-            cleanVersionString = cleanVersionString.substring(indexOfDoublePipe+1);
+        if(indexOfDoublePipe > 0){
+            cleanVersionString = cleanVersionString.substring(indexOfDoublePipe+2).strip();
         }
 
         return cleanVersionString;

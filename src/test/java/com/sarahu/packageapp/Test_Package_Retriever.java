@@ -11,7 +11,7 @@ public class Test_Package_Retriever {
     String TEST_VERSION = "1.0.1";
 
     @Test
-    public void Test_Get_Package(){
+    public void TestGetPackageWithVersion(){
         PackageRetriever retriever = new PackageRetriever();
         PackageData rootPackage = retriever.RetrievePackageDataFromAPI(TEST_PACKAGE_NAME, TEST_VERSION);
         Assertions.assertEquals(rootPackage.getName(), TEST_PACKAGE_NAME);
