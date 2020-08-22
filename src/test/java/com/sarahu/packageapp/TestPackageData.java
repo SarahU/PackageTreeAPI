@@ -23,4 +23,13 @@ public class TestPackageData {
         PackageData pd = new PackageData("name", input, true);
         Assertions.assertEquals(expectedOutput, pd.getVersion());
     }
+
+    @Test
+    public void TestPackageName_RemoveLargerThanEqualsToSymbols(){
+        String input = ">=0.0.5";
+        String expectedOutput = "0.0.5";
+
+        PackageData pd = new PackageData("name", input, true);
+        Assertions.assertEquals(expectedOutput, pd.getVersion());
+    }
 }

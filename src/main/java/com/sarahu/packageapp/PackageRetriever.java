@@ -9,7 +9,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -30,7 +29,7 @@ public class PackageRetriever {
     
     public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
         try {
-            return retrievePackageFromAPI(PackageName, Version).join();
+            return retrievePackageFromAPI(PackageName, Version);
         }catch (Throwable e){
             System.out.println(e);
             return new PackageData(PackageName, Version, false);
@@ -44,13 +43,17 @@ public class PackageRetriever {
                 .build();
     }
     
-    private CompletableFuture<PackageData> retrievePackageFromAPI(String PackageName, String Version){
+    private PackageData retrievePackageFromAPI(String PackageName, String Version){
         System.out.println("Processing:" + PackageName + "::" + Version);
         String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
         Function<String, PackageData> parseResponseToPackageData = this.parsePackageFromResponseData();
         HttpRequest request = createRequest(url);
-        return parseResponse(parseResponseToPackageData, client, request);
+        var pd = parseResponse(parseResponseToPackageData, client, request);
+        if(pd == null){
+            return new PackageData(PackageName, Version, false);
+        }
+        else return pd;
     }
 
     
@@ -73,10 +76,24 @@ public class PackageRetriever {
 //        return null;
 //    }
 
-    private CompletableFuture<PackageData> parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
-        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    private PackageData parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
+//        try {
+//            var item = client.send(request, HttpResponse.BodyHandlers.ofString());
+//            return parseFunction.apply(item.body());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        return null;
+        try {
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
-                    .thenApply(parseFunction);
+                    .thenApply(parseFunction)
+                    .join();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private Function<String, PackageData> parsePackageFromResponseData() {
@@ -89,16 +106,8 @@ public class PackageRetriever {
                 String name = parser.path("name").asText();
                 String version = parser.path("version").asText();
 
-                List<PackageData> dependencies = new ArrayList<>();
-                JsonNode depList = parser.get("dependencies");
-                if (depList != null) {
-                    dependencies = processPackageDependencies(depList.fields());
-                    List<CompletableFuture<PackageData>> collect = dependencies.stream()
-//                            .parallel()
-                            .map(i -> retrievePackageFromAPI(i.getName(), i.getVersion()))
-                            .collect(Collectors.toList());
-                    dependencies = collect.stream().map(x -> x.join()).collect(Collectors.toList());
-                }
+                List<PackageData> dependencies = processDependencyJson(parser);
+                dependencies = getDependencyPackageData(dependencies);
                 return new PackageData(name, version, true, dependencies);
 
             } catch (JsonProcessingException e) {
@@ -106,6 +115,23 @@ public class PackageRetriever {
                 return new PackageData("name", "version", false);
             }
         };
+    }
+
+    private List<PackageData> processDependencyJson(JsonNode parser) {
+        List<PackageData> dependencies = new ArrayList<>();
+        JsonNode depList = parser.get("dependencies");
+        if (depList != null) {
+            dependencies = processPackageDependencies(depList.fields());
+        }
+        return dependencies;
+    }
+
+    private List<PackageData> getDependencyPackageData(List<PackageData> dependencies) {
+        dependencies = dependencies.stream()
+//                            .parallel()
+                .map(i -> retrievePackageFromAPI(i.getName(), i.getVersion()))
+                .collect(Collectors.toList());
+        return dependencies;
     }
 
     private List<PackageData> processPackageDependencies(Iterator<Map.Entry<String, JsonNode>> dependencies) {

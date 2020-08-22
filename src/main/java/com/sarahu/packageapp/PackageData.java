@@ -12,6 +12,8 @@ public class PackageData {
     private String processVersion(String version) {
 
         String cleanVersionString = version.replace("^", "");
+        cleanVersionString = cleanVersionString.replace(">", "");
+        cleanVersionString = cleanVersionString.replace("=", "");
 
         int indexOfDoublePipe = cleanVersionString.indexOf("||");
         if(indexOfDoublePipe > 0){
