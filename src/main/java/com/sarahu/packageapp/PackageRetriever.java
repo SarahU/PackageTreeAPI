@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
@@ -20,6 +21,8 @@ public class PackageRetriever {
     String NPM_BASE_URL = "https://registry.npmjs.org";
     HttpClient client = null;
     ExecutorService executorService = Executors.newFixedThreadPool(20);
+//    PackagesRepository repository = new PackagesRepository();
+    ObjectMapper objectMapper = new ObjectMapper();
 
     public PackageRetriever(){
         client = HttpClient.newBuilder()
@@ -29,7 +32,9 @@ public class PackageRetriever {
     
     public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
         try {
-            return retrievePackageFromAPI(PackageName, Version);
+            var root = retrievePackageFromAPIAsync(PackageName, Version).join();
+            getDependencyPackageData(root);
+            return root;
         }catch (Throwable e){
             System.out.println(e);
             return new PackageData(PackageName, Version, false);
@@ -42,103 +47,70 @@ public class PackageRetriever {
                 .header("Content-Type", "application/json")
                 .build();
     }
-    
-    private PackageData retrievePackageFromAPI(String PackageName, String Version){
+
+    private CompletableFuture<PackageData> retrievePackageFromAPIAsync(String PackageName, String Version){
         System.out.println("Processing:" + PackageName + "::" + Version);
         String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
-        Function<String, PackageData> parseResponseToPackageData = this.parsePackageFromResponseData();
+        Function<String, PackageData> parseResponseToPackageData = this.parsePackageFromResponseData(PackageName, Version);
         HttpRequest request = createRequest(url);
-        var pd = parseResponse(parseResponseToPackageData, client, request);
-        if(pd == null){
-            return new PackageData(PackageName, Version, false);
-        }
-        else return pd;
+        return parseResponseAsync(parseResponseToPackageData, client, request);
     }
 
-    
-
-//    private PackageData parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
-//        try {
-////            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-////            return parseFunction.apply(response.body());
-//
-//
-////             var s = client.send(request, HttpResponse.BodyHandlers.ofString());
-////             return parseFunction.apply(s.body());
-//            client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-//                    .thenApply(HttpResponse::body)
-//                    .thenApplyAsync(parseFunction)
-//
-//        } catch (Throwable e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
-
-    private PackageData parseResponse(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
-//        try {
-//            var item = client.send(request, HttpResponse.BodyHandlers.ofString());
-//            return parseFunction.apply(item.body());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        return null;
-        try {
+    private CompletableFuture<PackageData> parseResponseAsync(Function<String, PackageData> parseFunction, HttpClient client, HttpRequest request) {
             return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
-                    .thenApply(parseFunction)
-                    .join();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+                    .thenApply(parseFunction);
     }
 
-    private Function<String, PackageData> parsePackageFromResponseData() {
+    private Function<String, PackageData> parsePackageFromResponseData(String name, String version) {
         return item -> {
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            try {
-                JsonNode parser = objectMapper.readTree(item);
-
-                String name = parser.path("name").asText();
-                String version = parser.path("version").asText();
-
-                List<PackageData> dependencies = processDependencyJson(parser);
-                dependencies = getDependencyPackageData(dependencies);
-                return new PackageData(name, version, true, dependencies);
-
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-                return new PackageData("name", "version", false);
-            }
+            return parsePackageInfo(item, name, version);
         };
+    }
+
+    private PackageData parsePackageInfo(String item, String name, String version){
+        JsonNode parser = null;
+        try {
+            parser = objectMapper.readTree(item);
+            name = parser.path("name").asText();
+            version = parser.path("version").asText();
+            List<PackageData> dependencies = processDependencyJson(parser);
+            return new PackageData(name, version, true, dependencies);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return new PackageData(name, version, false);
     }
 
     private List<PackageData> processDependencyJson(JsonNode parser) {
         List<PackageData> dependencies = new ArrayList<>();
         JsonNode depList = parser.get("dependencies");
         if (depList != null) {
-            dependencies = processPackageDependencies(depList.fields());
+            dependencies = getStreamFromIterator(depList.fields())
+                    .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true))
+                    .collect(Collectors.toList());
         }
         return dependencies;
     }
 
-    private List<PackageData> getDependencyPackageData(List<PackageData> dependencies) {
-        dependencies = dependencies.stream()
-//                            .parallel()
-                .map(i -> retrievePackageFromAPI(i.getName(), i.getVersion()))
+    private void getDependencyPackageData(PackageData node) {
+
+        var futures = node.getDependencies().stream()
+                .map(i -> retrievePackageFromAPIAsync(i.getName(), i.getVersion()));
+
+        var deps = futures
+                .map(CompletableFuture::join)
                 .collect(Collectors.toList());
-        return dependencies;
+
+        node.setDependencies(deps);
+        if(deps.stream().anyMatch(PackageData::hasDependencies)){
+            //recurse
+            deps.stream().filter(PackageData::hasDependencies)
+                    .forEach(i -> getDependencyPackageData(i));
+        }
     }
 
-    private List<PackageData> processPackageDependencies(Iterator<Map.Entry<String, JsonNode>> dependencies) {
-        return  getStreamFromIterator(dependencies)
-                .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true))
-                .collect(Collectors.toList());
-    }
 
     public static <T> Stream<T> getStreamFromIterator(Iterator<T> iterator) {
         Spliterator<T>

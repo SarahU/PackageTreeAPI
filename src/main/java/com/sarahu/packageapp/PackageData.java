@@ -7,7 +7,7 @@ public class PackageData {
     private final String name;
     private final String version;
     private final Boolean found;
-    private final List<PackageData> dependencies;
+    private List<PackageData> dependencies;
 
     private String processVersion(String version) {
 
@@ -55,5 +55,13 @@ public class PackageData {
 
     public List<PackageData> getDependencies(){
         return dependencies;
+    }
+
+    public void setDependencies(List<PackageData> dependencies){
+        this.dependencies = dependencies;
+    }
+
+    public Boolean hasDependencies(){
+        return !dependencies.isEmpty();
     }
 }
