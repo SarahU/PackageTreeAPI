@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Test_Package_Retriever {
+public class TestPackageRetriever_Integration {
     String TEST_PACKAGE_NAME = "gramma";
     String TEST_VERSION = "1.0.1";
 

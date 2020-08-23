@@ -3,6 +3,8 @@ package com.sarahu.packageapp;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,8 +19,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class PackageRetriever {
+    Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private HttpClient client = null;
+    private final HttpClient client;
 
     public PackageRetriever(){
         ExecutorService executorService = Executors.newFixedThreadPool(20);
@@ -28,19 +31,19 @@ public class PackageRetriever {
     }
     
     public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
+        logger.info(PackageName);
         try {
             var root = buildAsyncRequest(PackageName, Version).join();
             var parsedRoot = parsePackageInfo(root, PackageName,Version);
             processDependencyData(parsedRoot);
             return parsedRoot;
         }catch (Throwable e){
-            System.out.println(e);
+            logger.error("Failed to retrieve tree", e);
             return new PackageData(PackageName, Version, false);
         }
     }
 
     private CompletableFuture<String> buildAsyncRequest(String PackageName, String Version){
-        System.out.println("Processing:" + PackageName + "::" + Version);
         String NPM_BASE_URL = "https://registry.npmjs.org";
         String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
@@ -55,7 +58,7 @@ public class PackageRetriever {
     }
 
     private String handleFailedAPICall(Throwable error){
-        //log.error(error)
+        logger.error("Failure to retrieve package data form API", error);
         return "";
     }
 
@@ -69,7 +72,7 @@ public class PackageRetriever {
                 List<PackageData> dependencies = processDependencyJson(parser);
                 return new PackageData(name, version, true, dependencies);
             } catch (JsonProcessingException e) {
-                e.printStackTrace();
+                logger.error("Failed to parse " + name +":" + version, e);
             }
         }
         return new PackageData(name, version, false);
