@@ -50,19 +50,27 @@ public class PackageRetriever {
                 .build();
 
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(HttpResponse::body);
+                .thenApply(HttpResponse::body)
+                .exceptionally(this::handleFailedAPICall);
+    }
+
+    private String handleFailedAPICall(Throwable error){
+        //log.error(error)
+        return "";
     }
 
     private PackageData parsePackageInfo(String item, String name, String version){
         JsonNode parser = null;
-        try {
-            parser = objectMapper.readTree(item);
-            name = parser.path("name").asText();
-            version = parser.path("version").asText();
-            List<PackageData> dependencies = processDependencyJson(parser);
-            return new PackageData(name, version, true, dependencies);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+        if(!(item.equals("") || item.isEmpty())) {
+            try {
+                parser = objectMapper.readTree(item);
+                name = parser.path("name").asText();
+                version = parser.path("version").asText();
+                List<PackageData> dependencies = processDependencyJson(parser);
+                return new PackageData(name, version, true, dependencies);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
         }
         return new PackageData(name, version, false);
     }

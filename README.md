@@ -17,6 +17,7 @@ more susceptible to a scale issue if the set of dependencies for one package is 
 ## To Do:
 Error Handling for failed NPM API call
 More processing for versions
+Return different formats / protocols
 
 
 ## Queries:
