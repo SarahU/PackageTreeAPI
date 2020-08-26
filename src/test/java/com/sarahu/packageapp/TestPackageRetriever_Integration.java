@@ -12,7 +12,7 @@ public class TestPackageRetriever_Integration {
 
     @Test
     public void TestGetPackageWithVersion(){
-        PackageRetriever retriever = new PackageRetriever();
+        PackageRetriever retriever = new PackageRetriever(new PackageParser());
         PackageData rootPackage = retriever.RetrievePackageDataFromAPI(TEST_PACKAGE_NAME, TEST_VERSION);
         Assertions.assertEquals(rootPackage.getName(), TEST_PACKAGE_NAME);
         Assertions.assertEquals(rootPackage.getVersion(), TEST_VERSION);

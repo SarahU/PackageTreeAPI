@@ -1,6 +1,7 @@
 package com.sarahu.packageappapi;
 
 import com.sarahu.packageapp.PackageData;
+import com.sarahu.packageapp.PackageParser;
 import com.sarahu.packageapp.PackageRetriever;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
@@ -16,10 +17,11 @@ public class RetreivePackageController {
     CacheManager cacheManager;
 
 //    @Autowired
-    PackageRetriever retriever = new PackageRetriever();
+    PackageParser parser = new PackageParser();
+    PackageRetriever retriever = new PackageRetriever(parser);
 
     @Scheduled(cron = "*/2 * * * *")
-    public void evictAllcachesAtIntervals() {
+    public void evictAllCachesAtIntervals() {
         evictAllCaches();
     }
 
