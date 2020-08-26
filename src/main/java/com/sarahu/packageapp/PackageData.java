@@ -6,8 +6,22 @@ import java.util.List;
 public class PackageData {
     private final String name;
     private final String version;
+    private final String orginalVersion;
     private final Boolean found;
     private List<PackageData> dependencies;
+
+    public PackageData(String Name, String Version, Boolean Found, List<PackageData> Dependencies){
+        name = Name;
+        found = Found;
+        dependencies = Dependencies;
+
+        orginalVersion = Version;
+        version = processVersion(Version);
+    }
+
+    public PackageData(String Name, String Version, Boolean Found){
+        this(Name, Version, Found, new ArrayList<>());
+    }
 
     private String processVersion(String version) {
 
@@ -23,23 +37,6 @@ public class PackageData {
         return cleanVersionString;
     }
 
-    public PackageData(String Name, String Version, Boolean Found){
-        name = Name;
-        found = Found;
-
-        version = processVersion(Version);
-
-        dependencies = new ArrayList<>();
-    }
-
-    public PackageData(String Name, String Version, Boolean Found, List<PackageData> Dependencies){
-        name = Name;
-        found = Found;
-        dependencies = Dependencies;
-
-        version = processVersion(Version);
-    }
-
 
     public String getName(){
         return name;
@@ -47,6 +44,10 @@ public class PackageData {
 
     public String getVersion() {
         return version;
+    }
+
+    public String getOriginalVersion() {
+        return orginalVersion;
     }
 
     public Boolean getFound() {

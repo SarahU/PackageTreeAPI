@@ -13,6 +13,7 @@ public class TestPackageData {
         PackageData pd = new PackageData("name", input,true);
 
         Assertions.assertEquals(expectedResult, pd.getVersion());
+        Assertions.assertEquals(input, pd.getOriginalVersion());
     }
 
     @Test
@@ -22,6 +23,7 @@ public class TestPackageData {
 
         PackageData pd = new PackageData("name", input, true);
         Assertions.assertEquals(expectedOutput, pd.getVersion());
+        Assertions.assertEquals(input, pd.getOriginalVersion());
     }
 
     @Test
@@ -31,5 +33,6 @@ public class TestPackageData {
 
         PackageData pd = new PackageData("name", input, true);
         Assertions.assertEquals(expectedOutput, pd.getVersion());
+        Assertions.assertEquals(input, pd.getOriginalVersion());
     }
 }
