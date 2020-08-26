@@ -19,6 +19,7 @@ Make model for Json Data
 Change logging to go to file
 More processing for versions
 Return different formats / protocols
+Autowire the retriever and parser
 
 
 ## Queries:

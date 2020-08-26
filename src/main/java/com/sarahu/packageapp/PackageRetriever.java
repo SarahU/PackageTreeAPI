@@ -27,7 +27,6 @@ public class PackageRetriever {
     }
     
     public PackageData RetrievePackageDataFromAPI(String PackageName, String Version) {
-        logger.info(PackageName);
         try {
             var root = buildAsyncRequest(PackageName, Version).join();
             var parsedRoot = parser.ParseJson(root);
@@ -78,7 +77,7 @@ public class PackageRetriever {
         try {
             return parser.ParseJson(json);
         } catch (Exception e) {
-            logger.error("Error occurred processing dependencies for" + nodeWithDeps.getName() + ":" + nodeWithDeps.getVersion());
+            logger.error("Error occurred processing dependencies for " + nodeWithDeps.getName() + ":" + nodeWithDeps.getVersion(), e);
             return null;
         }
     }
