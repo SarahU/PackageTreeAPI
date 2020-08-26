@@ -17,7 +17,7 @@ public class TestPackageRetriever_Integration {
         Assertions.assertEquals(rootPackage.getName(), TEST_PACKAGE_NAME);
         Assertions.assertEquals(rootPackage.getVersion(), TEST_VERSION);
         Assertions.assertEquals(rootPackage.getFound(), true);
-        Assertions.assertEquals(rootPackage.getDependencies().size(), 11);
+        Assertions.assertEquals(rootPackage.getDependencies().size(), 24);
 
         List<PackageData> children = rootPackage.getDependencies().stream().filter(i -> i.getName().equals("decompress")).collect(Collectors.toList());
         PackageData decompress_package = children.get(0);
@@ -46,5 +46,27 @@ public class TestPackageRetriever_Integration {
         Assertions.assertEquals(end_of_stream_package.getName(), "end-of-stream");
         Assertions.assertEquals(end_of_stream_package.getVersion(), "1.0.0");
         Assertions.assertEquals(end_of_stream_package.getDependencies().size(), 1);
+
+
+        //devDependencies
+        children = rootPackage.getDependencies().stream().filter(i -> i.getName().equals("jest")).collect(Collectors.toList());
+        PackageData jest_package = children.get(0);
+        Assertions.assertEquals(jest_package.getName(), "jest");
+        Assertions.assertEquals(jest_package.getVersion(), "24.8.0");
+        Assertions.assertEquals(jest_package.getDependencies().size(), 2);
+
+        //jest-cli
+        children = jest_package.getDependencies().stream().filter(i -> i.getName().equals("jest-cli")).collect(Collectors.toList());
+        PackageData jest_cli_package = children.get(0);
+        Assertions.assertEquals(jest_cli_package.getName(), "jest-cli");
+        Assertions.assertEquals(jest_cli_package.getVersion(), "24.8.0");
+        Assertions.assertEquals(jest_cli_package.getDependencies().size(), 17);
+
+        children = jest_cli_package.getDependencies().stream().filter(i -> i.getName().equals("chalk")).collect(Collectors.toList());
+        PackageData chalk_package = children.get(0);
+        Assertions.assertEquals(chalk_package.getName(), "chalk");
+        Assertions.assertEquals(chalk_package.getVersion(), "2.0.1");
+        Assertions.assertEquals(chalk_package.getDependencies().size(), 10);
+
     }
 }

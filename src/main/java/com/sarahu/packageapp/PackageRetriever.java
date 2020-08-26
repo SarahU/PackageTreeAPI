@@ -7,6 +7,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -53,23 +54,28 @@ public class PackageRetriever {
     }
 
     private String handleFailedAPICall(Throwable error){
-        logger.error("Failure to retrieve package data from API", error);
+        logger.error("Failure to retrieve package data from API. " + error.getMessage(), error);
         return "";
     }
 
     private void processDependencyData(PackageData node) {
-        var parsedDependencies = node.getDependencies().stream()
-                .map(i -> buildAsyncRequest(i.getName(), i.getVersion()))
-                .map(CompletableFuture::join)
-                .parallel() //do not parallelize before this as  IO does not scale over fork/join architecture
-                .map(i -> handleParse(i, node))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        try {
+            var parsedDependencies = node.getDependencies().stream()
+                    .map(i -> buildAsyncRequest(i.getName(), i.getVersion()))
+                    .map(CompletableFuture::join)
+                    .parallel() //do not parallelize before this as IO does not scale over fork/join architecture
+                    .map(i -> handleParse(i, node))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
 
-        node.setDependencies(parsedDependencies);
-        if(parsedDependencies.stream().anyMatch(PackageData::hasDependencies)){
-            parsedDependencies.stream().filter(PackageData::hasDependencies)
-                                       .forEach(this::processDependencyData);
+            node.setDependencies(parsedDependencies);
+            if (parsedDependencies.stream().anyMatch(PackageData::hasDependencies)) {
+                parsedDependencies.stream().filter(PackageData::hasDependencies)
+                        .forEach(this::processDependencyData);
+            }
+        }catch (Exception e){
+            logger.error("Error parsing dependencies for " + node.getName() + ":" + node.getVersion());
+            node.setDependencies(new ArrayList<>());
         }
     }
 

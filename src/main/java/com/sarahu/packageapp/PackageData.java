@@ -1,5 +1,7 @@
 package com.sarahu.packageapp;
 
+import org.springframework.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,19 +21,39 @@ public class PackageData {
         version = processVersion(Version);
     }
 
-    public PackageData(String Name, String Version, Boolean Found){
+    public  PackageData(String Name, String Version, Boolean Found){
         this(Name, Version, Found, new ArrayList<>());
     }
 
     private String processVersion(String version) {
 
-        String cleanVersionString = version.replace("^", "");
-        cleanVersionString = cleanVersionString.replace(">", "");
-        cleanVersionString = cleanVersionString.replace("=", "");
+        String cleanVersionString = version;
 
-        int indexOfDoublePipe = cleanVersionString.indexOf("||");
-        if(indexOfDoublePipe > 0){
-            cleanVersionString = cleanVersionString.substring(indexOfDoublePipe+2).strip();
+        try {
+            cleanVersionString = cleanVersionString.replace(" ", "");
+            cleanVersionString = cleanVersionString.replace("^", "");
+            cleanVersionString = cleanVersionString.replace(">", "");
+            cleanVersionString = cleanVersionString.replace("=", "");
+            cleanVersionString = cleanVersionString.replace('x', '0');
+            cleanVersionString = cleanVersionString.replace("00", "0");
+
+            int indexOfLeftArrow = cleanVersionString.indexOf('<');
+            if(indexOfLeftArrow > 0){
+                cleanVersionString = cleanVersionString.substring(0, indexOfLeftArrow);
+            }
+
+            int indexOfDoublePipe = cleanVersionString.indexOf("||");
+            if (indexOfDoublePipe > 0) {
+                cleanVersionString = cleanVersionString.substring(indexOfDoublePipe + 2).strip();
+            }
+
+            int countOfDots = StringUtils.countOccurrencesOf(cleanVersionString, ".");
+            if(countOfDots == 3){
+                cleanVersionString = cleanVersionString.substring(cleanVersionString.indexOf('.')+1);
+            }
+
+        }catch (Exception e){
+            String a = e.getMessage();
         }
 
         return cleanVersionString;

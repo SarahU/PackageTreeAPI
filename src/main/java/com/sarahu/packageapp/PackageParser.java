@@ -20,21 +20,22 @@ public class PackageParser {
             parser = objectMapper.readTree(packageJson);
             String name = parser.path("name").asText();
             String version = parser.path("version").asText();
-            List<PackageData> dependencies = processDependencyJson(parser);
-            return new PackageData(name, version, true, dependencies);
+            Stream<PackageData> dependencies = processDependencyJson(parser, "dependencies");
+            Stream<PackageData> devDependencies = processDependencyJson(parser, "devDependencies");
+            List<PackageData> depsList = Stream.concat(dependencies, devDependencies).collect(Collectors.toList());
+            return new PackageData(name, version, true, depsList);
         } catch (Exception e) {
             String msg = "Unable to parse given Json: " + packageJson;
             throw new Exception(msg, e);
         }
     }
 
-    private List<PackageData> processDependencyJson(JsonNode parser) {
-        List<PackageData> dependencies = new ArrayList<>();
-        JsonNode depList = parser.get("dependencies");
+    private Stream<PackageData> processDependencyJson(JsonNode parser, String dependencyJsonFieldName) {
+        Stream<PackageData> dependencies = new ArrayList<PackageData>().stream();
+        JsonNode depList = parser.get(dependencyJsonFieldName);
         if (depList != null) {
             dependencies = getStreamFromIterator(depList.fields())
-                    .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true))
-                    .collect(Collectors.toList());
+                    .map(i -> new PackageData(i.getKey(), i.getValue().textValue(), true));
         }
         return dependencies;
     }
