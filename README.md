@@ -8,8 +8,6 @@ docker build -t packagetreeapi .
 
 ## Decisions / Assumptions:
 
-Assumed that in our domain explicit dependencies and devDependencies from NPM, are both equally considered dependencies.
-
 Not handling scenario: "@types/jest": "^24.0.15", as various other. These will instead fail and return an empty dependency list
 
 For version processing, where there is a choice, the more recent version was selected.
@@ -29,7 +27,3 @@ Change logging to go to file
 More processing for versions
 Return different formats / protocols
 Autowire the retriever and parser
-
-
-## Queries:
-How to handle multiple versions in dependency list ie do we want to see this?
