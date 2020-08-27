@@ -8,7 +8,7 @@ import java.util.List;
 public class PackageData {
     private final String name;
     private final String version;
-    private final String orginalVersion;
+    private final String originalVersion;
     private final Boolean found;
     private List<PackageData> dependencies;
 
@@ -17,7 +17,7 @@ public class PackageData {
         found = Found;
         dependencies = Dependencies;
 
-        orginalVersion = Version;
+        originalVersion = Version;
         version = processVersion(Version);
     }
 
@@ -69,7 +69,7 @@ public class PackageData {
     }
 
     public String getOriginalVersion() {
-        return orginalVersion;
+        return originalVersion;
     }
 
     public Boolean getFound() {

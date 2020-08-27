@@ -18,6 +18,7 @@ public class PackageRetriever {
     Logger logger = LoggerFactory.getLogger(this.getClass());
     private final HttpClient client;
     private final PackageParser parser;
+    private final PackageDataRepository repository = new PackageDataRepository();
 
     public PackageRetriever(PackageParser parser){
         this.parser = parser;
@@ -39,7 +40,27 @@ public class PackageRetriever {
         }
     }
 
+    public CompletableFuture<String> returnCachedJson(String PackageName, String Version) {
+        CompletableFuture<String> completableFuture
+                = new CompletableFuture<>();
+
+        var cachedResponse = lookInCache(new PackageVersion(PackageName, Version));
+
+        Executors.newCachedThreadPool().submit(() -> {
+            completableFuture.complete(cachedResponse);
+            return null;
+        });
+
+        return completableFuture;
+    }
+
+
     private CompletableFuture<String> buildAsyncRequest(String PackageName, String Version){
+        var cachedResponse = lookInCache(new PackageVersion(PackageName, Version));
+        if(cachedResponse != null){
+            return returnCachedJson(PackageName, Version);
+        }
+
         String NPM_BASE_URL = "https://registry.npmjs.org";
         String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
 
@@ -48,9 +69,17 @@ public class PackageRetriever {
                 .header("Content-Type", "application/json")
                 .build();
 
-        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        CompletableFuture<String> future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
+                .thenApply(i -> {
+                    return repository.insertPackage(new PackageVersion(PackageName, Version), i);
+                })
                 .exceptionally(this::handleFailedAPICall);
+        return future;
+    }
+
+    private String lookInCache(PackageVersion pv){
+        return repository.getPackage(pv);
     }
 
     private String handleFailedAPICall(Throwable error){
