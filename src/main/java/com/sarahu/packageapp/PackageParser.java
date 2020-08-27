@@ -20,10 +20,10 @@ public class PackageParser {
             parser = objectMapper.readTree(packageJson);
             String name = parser.path("name").asText();
             String version = parser.path("version").asText();
-            Stream<PackageData> dependencies = processDependencyJson(parser, "dependencies");
-            Stream<PackageData> devDependencies = processDependencyJson(parser, "devDependencies");
-            List<PackageData> depsList = Stream.concat(dependencies, devDependencies).collect(Collectors.toList());
-            return new PackageData(name, version, true, depsList);
+            List<PackageData> dependencies = processDependencyJson(parser, "dependencies").collect(Collectors.toList());
+//            Stream<PackageData> devDependencies = processDependencyJson(parser, "devDependencies");
+//            List<PackageData> depsList = Stream.concat(dependencies, devDependencies).collect(Collectors.toList());
+            return new PackageData(name, version, true, dependencies);
         } catch (Exception e) {
             String msg = "Unable to parse given Json: " + packageJson;
             throw new Exception(msg, e);
