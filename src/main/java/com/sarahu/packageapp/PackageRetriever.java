@@ -60,22 +60,18 @@ public class PackageRetriever {
         if(cachedResponse != null){
             return returnCachedJson(PackageName, Version);
         }
-
-        String NPM_BASE_URL = "https://registry.npmjs.org";
-        String url = NPM_BASE_URL + "/" + PackageName + "/" + Version;
+        
+        String url = "https://registry.npmjs.org" + "/" + PackageName + "/" + Version;
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/json")
                 .build();
 
-        CompletableFuture<String> future = client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(HttpResponse::body)
-                .thenApply(i -> {
-                    return repository.insertPackage(new PackageVersion(PackageName, Version), i);
-                })
+                .thenApply(json -> repository.insertPackage(new PackageVersion(PackageName, Version), json))
                 .exceptionally(this::handleFailedAPICall);
-        return future;
     }
 
     private String lookInCache(PackageVersion pv){

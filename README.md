@@ -24,10 +24,10 @@ interacting with the real world.
 ## To Do:
 Make model for Json Data
 
-Change logging to go to file
-
 More processing for versions
 
 Return different formats / protocols
 
 Autowire the retriever and parser
+
+Refactoring clean up - there are some duplications and unneeded conversions.
